@@ -37,6 +37,88 @@ Mechanically, the mask works via **bitwise AND**: `IP AND mask = network address
 
 📐 **The core formula:** `/n` → `32 - n` host bits → `2^(32-n)` total addresses in that block. Memorize the last-octet values (`0,128,192,224,240,248,252,254,255`) — you'll use them constantly, and in the eval you have no calculator beyond `bc`.
 
+### 🎯 The "only 9 valid values" rule
+
+A subnet mask, read left to right in binary, is always a run of `1`s followed by a run of `0`s — **never** mixed (`11110101` is not a valid mask octet). This means **only 9 values are ever possible** in any mask octet:
+
+```
+00000000 → 0
+10000000 → 128
+11000000 → 192
+11100000 → 224
+11110000 → 240
+11111000 → 248
+11111100 → 252
+11111110 → 254
+11111111 → 255
+```
+
+⚠️ **The moment one octet isn't `255`, every octet after it must be `0`.** So `255.255.240.0` is a valid mask, but `255.255.240.128` is never valid — once the run of `1`s stops, it can't restart later. If you ever see a mask field that doesn't fit this pattern, something's wrong before you even get to IPs.
+
+### 🧠 Deriving the 9 values under exam pressure (no memorizing 9 random numbers)
+
+You don't need to memorize `0, 128, 192, 224, 240, 248, 252, 254, 255` as a random list — each value is the previous one **plus half of what's left to 256**:
+
+```
+0
+128  (0 + 128)
+192  (128 + 64)
+224  (192 + 32)
+240  (224 + 16)
+248  (240 + 8)
+252  (248 + 4)
+254  (252 + 2)
+255  (254 + 1)
+```
+
+The additions are always `128, 64, 32, 16, 8, 4, 2, 1` — powers of 2, halving each time. If you know that sequence (it never changes), you can rebuild the whole table in seconds instead of recalling 9 loose numbers.
+
+### 🧮 If you blank on it: the `bc` formula (allowed in the eval)
+
+The PDF explicitly allows a simple calculator like `bc` during evaluation. The formula:
+
+```
+mask_octet = 256 - 2^(8 - network_bits_in_that_octet)
+```
+
+**Worked example — deriving `/30`:**
+1. `/30` = 30 network bits total
+2. The first 3 octets are always fully `255` (that's `8+8+8 = 24` bits used up)
+3. That leaves `30 - 24 = 6` network bits in the last octet
+4. `256 - 2^(8-6) = 256 - 4 = 252` → so `/30` = `255.255.255.252` ✅
+
+```bash
+$ bc
+256 - 2^(8-6)
+252
+```
+
+**Shortcut for any CIDR:** count how many full `255` octets fit first (each is worth 8 bits), then apply the formula (or the doubling table) to whatever bits remain in the next octet. It's the same calculation every time — practice it a few times and it becomes automatic.
+
+### 📋 Full CIDR reference table
+
+| CIDR | Subnet Mask | # Addresses | # Usable Hosts |
+|---|---|---|---|
+| /32 | 255.255.255.255 | 1 | 1 |
+| /31 | 255.255.255.254 | 2 | 2 |
+| /30 | 255.255.255.252 | 4 | 2 |
+| /29 | 255.255.255.248 | 8 | 6 |
+| /28 | 255.255.255.240 | 16 | 14 |
+| /27 | 255.255.255.224 | 32 | 30 |
+| /26 | 255.255.255.192 | 64 | 62 |
+| /25 | 255.255.255.128 | 128 | 126 |
+| /24 | 255.255.255.0 | 256 | 254 |
+| /23 | 255.255.254.0 | 512 | 510 |
+| /22 | 255.255.252.0 | 1,024 | 1,022 |
+| /21 | 255.255.248.0 | 2,048 | 2,046 |
+| /20 | 255.255.240.0 | 4,096 | 4,094 |
+| /19 | 255.255.224.0 | 8,192 | 8,190 |
+| /18 | 255.255.192.0 | 16,384 | 16,382 |
+| /17 | 255.255.128.0 | 32,768 | 32,766 |
+| /16 | 255.255.0.0 | 65,536 | 65,534 |
+
+💡 For NetPractice specifically, you'll almost never need anything smaller than `/16` — most levels live comfortably in the `/24`–`/30` range. The full table down to `/0` exists in theory, but memorize `/24` through `/30` cold; everything bigger is rare in these exercises.
+
 ## 🧮 Calculating a network's range — full method
 
 Given an IP and a mask, three things exist in every block:
