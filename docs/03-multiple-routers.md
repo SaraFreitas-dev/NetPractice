@@ -60,6 +60,77 @@ A static route's right-hand side is **never** the destination host itself — it
 
 Notice the pattern: **6 route entries total** across 3 routers for full two-way communication (2 per router, one each direction) — plus the two host gateways. Miss any single one and exactly one direction of one segment stops working, which is usually visible as "one goal OK, the paired one KO."
 
+## 🔍 Worked example 2 — a BRANCHING topology (not just a straight line)
+
+Chains aren't the only shape you'll see. Sometimes one router connects to *two* others, forming a branch:
+
+```
+                          🖥️ Host A (192.168.1.10/24)
+                                   |
+                          R1 iface1 (192.168.1.1/24)
+                          R1 iface2 (10.0.0.1/30) ---- 10.0.0.2/30 R2 iface1 -- R2 iface2 (192.168.2.1/24) -- 🖥️ Host B (192.168.2.10/24)
+                          R1 iface3 (10.0.1.1/30) ---- 10.0.1.2/30 R3 iface1 -- R3 iface2 (192.168.3.1/24) -- 🖥️ Host C (192.168.3.10/24)
+```
+
+R1 has **three** interfaces this time — one toward Host A, one toward R2 (which leads to Host B), one toward R3 (which leads to Host C). This is the same logic as the linear chain, just applied with R1 as a hub instead of a link in a straight line.
+
+**Goal: Host A needs to reach both Host B and Host C.**
+
+- Host A's gateway → `192.168.1.1` (R1 iface1) — same as always, only one gateway needed even though there are two destinations
+- R1 needs **two separate routes**, one per branch:
+  - `192.168.2.0/24 → 10.0.0.2` (toward R2, for Host B)
+  - `192.168.3.0/24 → 10.0.1.2` (toward R3, for Host C)
+- R2 needs nothing extra for `192.168.2.0/24` (directly connected) — but for the **return** trip to Host A, R2 needs: `192.168.1.0/24 → 10.0.0.1` (back to R1)
+- R3, similarly, needs for its return trip: `192.168.1.0/24 → 10.0.1.1` (back to R1)
+
+🧠 **Takeaway:** a router with 3+ interfaces doesn't change any single rule — it just means you repeat "add a route for every network I'm not directly connected to" **once per branch**, not just once total. R1 ends up with 2 routes instead of 1, simply because it has 2 "elsewhere" networks to reach instead of 1.
+
+⚠️ **A trap specific to branching topologies:** R2 and R3 only know about their *own* branch. If Host B ever needed to reach Host C (not just Host A), R1 would need to relay between R2 and R3 — but R2 doesn't automatically know R3 exists, and vice versa. Every router still only knows what doc 02 said: its direct connections plus whatever you explicitly add. A branch doesn't create automatic awareness between the branches themselves.
+
+## 🔍 Worked example 3 — spotting a broken route in a chain from the log
+
+Given the same 3-router chain as Worked example 1 (Host A ↔ Host B through R1-R2-R3), suppose you've configured everything *except* you forgot R2's return-direction route. Here's what checking the reverse goal (B → A) would show:
+
+```
+Goal 2: host B needs to communicate with host A — Status: KO
+--- log ---
+on B: packet accepted
+on B: sent to gateway 192.168.20.1
+on R3: packet accepted
+on R3: sent to gateway 10.0.1.1
+on R2: packet accepted
+on R2: destination does not match any interface
+pass through routing table
+on R2: destination does not match any route
+```
+
+Reading this line by line: B successfully reached R3, R3 successfully forwarded to R2 (both of those hops are configured correctly) — but **R2** doesn't know how to get to `192.168.10.0/24` from here. The log names R2 explicitly right where it breaks down. This is exactly the "6 route entries, miss one and exactly one direction breaks" scenario from Worked example 1 — the log tells you precisely which of the 6 is the missing one, so you never have to guess-and-check all of them.
+
+---
+
+## 📝 Practice — try these yourself, answers below
+
+**1.** A linear chain: Host A — R1 — R2 — Host B (2 routers only, not 3). R1's networks: `iface1 172.16.1.1/24` (toward A), `iface2 10.5.5.1/30` (toward R2). R2's networks: `iface1 10.5.5.2/30` (toward R1), `iface2 172.16.2.1/24` (toward B). Write every gateway and every route needed, both directions.
+
+**2.** In the branching topology from Worked example 2, if Host B tried to reach Host C directly (not through Host A), would it work with the routes already configured? Why or why not?
+
+**3.** A log for a 4-router chain shows the packet successfully passing through the first 2 routers, then stopping with `destination does not match any route` on the 3rd router. How many total route entries would you expect to need for full 2-way communication across all 4 routers, and which single one is confirmed missing by this log?
+
+<details>
+<summary>Click to check your answers</summary>
+
+**1.**
+- Host A gateway → `172.16.1.1`
+- Host B gateway → `172.16.2.1`
+- R1 route (forward): `172.16.2.0/24 → 10.5.5.2`
+- R2 route (return): `172.16.1.0/24 → 10.5.5.1`
+
+**2.** No, it would fail. R2 (Host B's router) has no route toward `192.168.3.0/24` (Host C's network) — it only knows its own directly-connected network and, at most, a route back toward Host A via R1. R3 is a completely separate branch that R2 has never been told about. To make B ↔ C work, you'd need to add routes on R2 (toward R3, via R1) and on R3 (toward R2, via R1), plus R1 would need to relay between both branches — R1 already can, since it directly connects to both, but R2 and R3 individually cannot skip over R1.
+
+**3.** For a 4-router chain (R1-R2-R3-R4), full 2-way communication needs 2 routes per router × 4 routers = **8 total route entries** (each router needs one route toward "further along" and one toward "back the way it came," except the routers at each end only need one direction each toward their own directly-connected host network — so in practice it's slightly fewer, but conceptually budget for up to 2 per router). The log confirms specifically that **the 3rd router is missing its forward-direction route** — the first 2 routers' forwarding is confirmed working since the packet reached the 3rd router successfully.
+
+</details>
+
 ## 🧠 Mental model for solving a multi-router level
 
 1. 🗺️ **Map the topology fully first** — every segment, every router interface, before touching any field. Sketch it on paper if the diagram is dense.
