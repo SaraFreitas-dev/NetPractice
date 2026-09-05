@@ -1,5 +1,18 @@
 # 🚦 02 — Gateway & Static Routes
 
+## 🔀 Before anything else: are you even looking at a router?
+
+Everything in this document assumes you've already identified that you're dealing with a **router** and not just a switch or a direct link. This distinction matters enormously, because the two devices look similar at first glance but need completely different treatment:
+
+- A **switch** connects devices that are **already on the same network**. You never configure a gateway or route for it — it doesn't have IP/Mask fields of its own, and it's invisible to the addressing logic covered in doc 01. If two hosts are linked through a switch, your only job is making sure their IP + mask put them in the same network block.
+- A **router** connects **different** networks together. Each of its interfaces has its own IP/Mask (one per network it touches), and this is exactly where gateways and routes come into play.
+
+**How to tell them apart on screen:** a router shows up as a single device with **multiple numbered interfaces** (e.g., `interface R11`, `interface R12` both belonging to `router R1`), each with editable IP/Mask fields. A switch either isn't shown as a configurable box at all, or shows up as a simple passthrough between two devices' interface boxes with nothing to edit on it directly.
+
+📖 **For a full, detailed walkthrough of recognizing switches vs. routers in the actual NetPractice diagrams** — including a worked example of reading a multi-hop diagram piece by piece, and the most common mix-up (pointing a gateway at the wrong-side interface) — see **doc 05: Switches vs. Routers**. It's worth reading *before* this document if you're not yet 100% sure you can spot a router on sight, since everything below assumes that skill.
+
+Once you've confirmed you're looking at a router (not a switch), the rest of this document explains what to actually configure on it and around it.
+
 ## 🔌 Why a switch isn't enough
 
 A switch only forwards frames between devices **already on the same network** (doc 01). It has zero concept of "other networks" — it doesn't even look at IP addresses, just hardware addresses on its own segment. 🤷
