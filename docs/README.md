@@ -13,9 +13,12 @@
 | 06 | `06-internet-interface-routes.md` | Calculating specific routes for an "Internet" node (not `default`) | A level has an Internet/upstream node needing a real network on the left side |
 | 07 | `07-quick-qa-reference.md` | Fast, plain-language Q&A — one-liners for every concept above | You just need a quick reminder, not the full explanation |
 | 08 | `08-common-mistakes-review.md` | The recurring concepts behind the errors that come up most, explained again | You want a refresher without re-reading everything |
+| 09 | `09-full-worked-level.md` | One complete topology, solved start to finish, using every doc above together | You've done the isolated pieces and want to see them combined |
 
 ## Recommended order for a first read-through
 
 ```
 00 → 01 → 04 → 05 → 02 → 03 → 06 → 09
 ```
+
+`07` and `08` are reference material — dip into them anytime, no fixed place in the sequence.
