@@ -117,6 +117,16 @@ $ bc
 | /17 | 255.255.128.0 | 32,768 | 32,766 |
 | /16 | 255.255.0.0 | 65,536 | 65,534 |
 
+```text
+/24 → blocos de 256
+/25 → blocos de 128
+/26 → blocos de 64
+/27 → blocos de 32
+/28 → blocos de 16
+/29 → blocos de 8
+/30 → blocos de 4
+```
+
 💡 For NetPractice specifically, you'll almost never need anything smaller than `/16` — most levels live comfortably in the `/24`–`/30` range. The full table down to `/0` exists in theory, but memorize `/24` through `/30` cold; everything bigger is rare in these exercises.
 
 ## 🧮 Calculating a network's range — full method
