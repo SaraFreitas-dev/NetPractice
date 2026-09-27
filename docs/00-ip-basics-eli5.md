@@ -2,6 +2,8 @@
 
 > This doc exists for someone who has genuinely never seen this before. No jargon, no binary knowledge assumed — just the logic, step by step, with lots of examples.
 
+![Networking Basics — Quick Visual Guide](./networking_basics_quick_visual_guide.png)
+
 ## 🤔 First: what even is an IP address?
 
 Every device on a network (a computer, a router, a phone) needs an "address" so other devices know how to reach it — just like your house needs a postal address so people can send you mail.
