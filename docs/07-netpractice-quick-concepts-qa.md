@@ -41,6 +41,14 @@ The last address of a subnet. It is used to reach all devices in that subnet.
 ### Can the broadcast address be assigned to a host?
 No.
 
+### Which addresses in a subnet cannot be assigned to hosts?
+A: The first address is the **network address**, and the last is the **broadcast address**.
+
+Example: `192.168.1.0 → 192.168.1.127`  
+- `.0` = Network  
+- `.1 → .126` = Available Hosts  
+- `.127` = Broadcast
+
 ---
 
 ## 🔢 Subnet Masks
